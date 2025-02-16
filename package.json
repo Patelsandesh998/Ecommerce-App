@@ -1,5 +1,5 @@
 {
-  "name": "ecommerce",
+  "name": "ecommerce-app",
   "version": "1.0.0",
   "description": "Ecommerce rest api",
   "main": "server.js",
