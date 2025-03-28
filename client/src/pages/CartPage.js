@@ -78,7 +78,7 @@ const CartPage = () => {
     }
   };
   return (
-    <Layout>
+    <Layout title="CartPage-Online Nepal 2024">
       <div className=" cart-page">
         <div className="row">
           <div className="col-md-12">

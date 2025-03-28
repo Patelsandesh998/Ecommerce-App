@@ -13,123 +13,137 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [cart, setCart] = useCart();
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([]); // Ensure categories is always an array
   const [checked, setChecked] = useState([]);
   const [radio, setRadio] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  //get all cat
+  // Fetch all categories
   const getAllCategory = async () => {
     try {
       const { data } = await axios.get("/api/v1/category/get-category");
+      console.log("Categories Data:", data); // Debugging
       if (data?.success) {
-        setCategories(data?.category);
+        setCategories(data.category || []);
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching categories:", error);
     }
   };
 
-  useEffect(() => {
-    getAllCategory();
-    getTotal();
-  }, []);
-  //get products
+  // Fetch all products
   const getAllProducts = async () => {
     try {
       setLoading(true);
       const { data } = await axios.get(`/api/v1/product/product-list/${page}`);
       setLoading(false);
-      setProducts(data.products);
+      setProducts(data?.products || []);
     } catch (error) {
       setLoading(false);
-      console.log(error);
+      console.error("Error fetching products:", error);
     }
   };
 
-  //getTOtal COunt
+  // Get total product count
   const getTotal = async () => {
     try {
       const { data } = await axios.get("/api/v1/product/product-count");
-      setTotal(data?.total);
+      setTotal(data?.total || 0);
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching total products:", error);
     }
   };
 
-  useEffect(() => {
-    if (page === 1) return;
-    loadMore();
-  }, [page]);
-  //load more
+  // Load more products on pagination
   const loadMore = async () => {
     try {
       setLoading(true);
       const { data } = await axios.get(`/api/v1/product/product-list/${page}`);
       setLoading(false);
-      setProducts([...products, ...data?.products]);
+      setProducts((prev) => [...prev, ...(data?.products || [])]);
     } catch (error) {
-      console.log(error);
       setLoading(false);
+      console.error("Error loading more products:", error);
     }
   };
 
-  // filter by cat
-  const handleFilter = (value, id) => {
-    let all = [...checked];
-    if (value) {
-      all.push(id);
-    } else {
-      all = all.filter((c) => c !== id);
-    }
-    setChecked(all);
-  };
+  // Fetch categories and total count on mount
   useEffect(() => {
-    if (!checked.length || !radio.length) getAllProducts();
-  }, [checked.length, radio.length]);
+    getAllCategory();
+    getTotal();
+  }, []);
 
+  // Fetch products on page change
+  useEffect(() => {
+    if (page === 1) return;
+    loadMore();
+  }, [page]);
+
+  // Handle category filter
+  const handleFilter = (value, id) => {
+    setChecked((prev) =>
+      value ? [...prev, id] : prev.filter((c) => c !== id)
+    );
+  };
+
+  // Fetch all products when no filters are applied
+  useEffect(() => {
+    if (checked.length === 0 && radio.length === 0) {
+      getAllProducts();
+    }
+  }, [checked, radio]);
+
+  // Fetch filtered products when filters change
   useEffect(() => {
     if (checked.length || radio.length) filterProduct();
   }, [checked, radio]);
 
-  //get filterd product
+  // Get filtered products
   const filterProduct = async () => {
     try {
       const { data } = await axios.post("/api/v1/product/product-filters", {
         checked,
         radio,
       });
-      setProducts(data?.products);
+      setProducts(data?.products || []);
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching filtered products:", error);
     }
   };
+
   return (
-    <Layout title={"ALl Products - Best offers "}>
-      {/* banner image */}
+    <Layout title={"All Products - Best Offers"}>
+      {/* Banner Image */}
       <img
-        src="/images/banner.png"
-        className="banner-img"
-        alt="bannerimage"
+        src="/images/banner1.jpg"
+        className="banner1-img"
+        alt="banner"
         width={"100%"}
       />
-      {/* banner image */}
+
+      {/* Main Content */}
       <div className="container-fluid row mt-3 home-page">
+        {/* Filters Section */}
         <div className="col-md-3 filters">
           <h4 className="text-center">Filter By Category</h4>
           <div className="d-flex flex-column">
-            {categories?.map((c) => (
-              <Checkbox
-                key={c._id}
-                onChange={(e) => handleFilter(e.target.checked, c._id)}
-              >
-                {c.name}
-              </Checkbox>
-            ))}
+            {categories.length > 0 ? (
+              categories.map((c) => (
+                <Checkbox
+                  key={c._id}
+                  onChange={(e) => handleFilter(e.target.checked, c._id)}
+                >
+                  {c.name}
+                </Checkbox>
+              ))
+            ) : (
+              <p>No categories found</p>
+            )}
           </div>
-          {/* price filter */}
+
+          {/* Price Filter */}
           <h4 className="text-center mt-4">Filter By Price</h4>
           <div className="d-flex flex-column">
             <Radio.Group onChange={(e) => setRadio(e.target.value)}>
@@ -140,6 +154,7 @@ const HomePage = () => {
               ))}
             </Radio.Group>
           </div>
+
           <div className="d-flex flex-column">
             <button
               className="btn btn-danger"
@@ -149,7 +164,9 @@ const HomePage = () => {
             </button>
           </div>
         </div>
-        <div className="col-md-9 ">
+
+        {/* Products Section */}
+        <div className="col-md-9">
           <h1 className="text-center">All Products</h1>
           <div className="d-flex flex-wrap">
             {products?.map((p) => (
@@ -169,7 +186,7 @@ const HomePage = () => {
                       })}
                     </h5>
                   </div>
-                  <p className="card-text ">
+                  <p className="card-text">
                     {p.description.substring(0, 60)}...
                   </p>
                   <div className="card-name-price">
@@ -197,6 +214,8 @@ const HomePage = () => {
               </div>
             ))}
           </div>
+
+          {/* Load More Button */}
           <div className="m-2 p-3">
             {products && products.length < total && (
               <button
@@ -210,8 +229,7 @@ const HomePage = () => {
                   "Loading ..."
                 ) : (
                   <>
-                    {" "}
-                    Loadmore <AiOutlineReload />
+                    Load More <AiOutlineReload />
                   </>
                 )}
               </button>
